@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Juicy Block Puzzle Game with Expanded Shapes, Combos, Particles & SFX</title>
+    <!-- Include Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             margin: 0;
@@ -165,6 +167,23 @@
             font-size: 36px;
             margin-bottom: 10px;
         }
+        .input-group {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .input-group input {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #4cc9f0;
+            background: #0f3460;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            text-align: center;
+        }
         #restart-btn {
             background: #e94560;
             color: white;
@@ -174,7 +193,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 15px;
+            margin-top: 10px;
             transition: background 0.2s, transform 0.1s;
         }
         #restart-btn:hover {
@@ -230,13 +249,23 @@
         <h1>GAME OVER</h1>
         <p>No more moves available!</p>
         <p>Final Score: <span id="final-score">0</span></p>
-        <button id="restart-btn" onclick="resetGame()">Play Again</button>
+        <div class="input-group">
+            <input type="text" id="player-name" placeholder="Enter your name" maxlength="15" />
+            <button id="restart-btn" onclick="submitScoreAndRestart()">Submit & Play Again</button>
+        </div>
     </div>
 </div>
 
 <div id="drag-ghost"></div>
 
 <script>
+    // --- SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = 'https://awmkvylkkwprtqslsdyp.supabase.co'; // Replace with your Supabase URL
+    const SUPABASE_ANON_KEY = 'sb_publishable_F4CmcpKDCwxWmtEKlDqfzg_SlhbctQq'; // Replace with your Supabase Anon Key
+    const GAME_ID = '818af355-8627-4231-8bdf-70499f8e2be1'; // Replace with your exact Products Table UUID
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     let audioCtx = null;
     let soundEnabled = true;
 
@@ -746,6 +775,48 @@
             gameOverScreen.style.visibility = 'visible';
         }
     }
+
+ async function submitScoreAndRestart() {
+    if (score > 0) {
+        try {
+            // 1. Get the currently logged-in user from Supabase session
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+            if (authError || !user) {
+                console.warn('No active Supabase user found. Score not submitted.');
+                resetGame();
+                return;
+            }
+
+            // 2. Extract Google profile name (falls back to email)
+            const playerName = user.user_metadata?.full_name || 
+                               user.user_metadata?.name || 
+                               user.email || 
+                               'Google User';
+
+            // 3. Upsert the score (updates the existing row if score is higher, or inserts if new)
+            const { error } = await supabaseClient
+                .from('leaderboards')
+                .upsert([
+                    { 
+                        game_id: GAME_ID, 
+                        player_name: playerName, 
+                        score: score 
+                    }
+                ], { 
+                    onConflict: 'game_id, player_name' 
+                });
+
+            if (error) {
+                console.error('Error submitting score to Supabase:', error.message);
+            }
+        } catch (err) {
+            console.error('Unexpected error during score submission:', err);
+        }
+    }
+
+    resetGame();
+}
 
     function resetGame() {
         board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
