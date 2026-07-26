@@ -245,15 +245,11 @@
     <div id="board"></div>
     <div id="dock"></div>
     
-    <div id="game-over-screen">
-        <h1>GAME OVER</h1>
-        <p>No more moves available!</p>
-        <p>Final Score: <span id="final-score">0</span></p>
-        <div class="input-group">
-            <input type="text" id="player-name" placeholder="Enter your name" maxlength="15" />
-            <button id="restart-btn" onclick="submitScoreAndRestart()">Submit & Play Again</button>
-        </div>
-    </div>
+   <div id="game-over-screen">
+    <h1>GAME OVER</h1>
+    <p>No more moves available!</p>
+    <p>Final Score: <span id="final-score">0</span></p>
+    <button id="restart-btn" onclick="submitScoreAndRestart()">Play Again</button>
 </div>
 
 <div id="drag-ghost"></div>
@@ -783,7 +779,7 @@
             const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
             if (authError || !user) {
-                console.warn('No active Supabase user found. Score not submitted.');
+                console.warn('No active Supabase user session found:', authError?.message);
                 resetGame();
                 return;
             }
@@ -794,7 +790,9 @@
                                user.email || 
                                'Google User';
 
-            // 3. Upsert the score (updates the existing row if score is higher, or inserts if new)
+            console.log(`Attempting to submit score ${score} for player: ${playerName}`);
+
+            // 3. Upsert the score into Supabase
             const { error } = await supabaseClient
                 .from('leaderboards')
                 .upsert([
@@ -808,7 +806,9 @@
                 });
 
             if (error) {
-                console.error('Error submitting score to Supabase:', error.message);
+                console.error('Supabase Error submitting score:', error.message);
+            } else {
+                console.log('Score successfully submitted/updated!');
             }
         } catch (err) {
             console.error('Unexpected error during score submission:', err);
@@ -817,7 +817,6 @@
 
     resetGame();
 }
-
     function resetGame() {
         board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
         score = 0;
