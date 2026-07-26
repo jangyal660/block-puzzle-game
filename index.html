@@ -240,8 +240,8 @@
 <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL'
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+    const SUPABASE_URL = 'https://awmkvylkkwprtqslsdyp.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_F4CmcpKDCwxWmtEKlDqfzg_SlhbctQq'
     
     window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 </script>
@@ -734,7 +734,7 @@
 
     async function submitHighScore(score) {
         if (!window.supabaseClient) return;
-        const gameId = 'YOUR_GAME_UUID_FROM_SUPABASE'; // Replace with this game's UUID
+        const gameId = '818af355-8627-4231-8bdf-70499f8e2be1'; // Replace with this game's UUID
         const playerName = prompt("Game Over! Enter your name for the leaderboard:", "Player") || "Anonymous";
 
         const { error } = await window.supabaseClient
